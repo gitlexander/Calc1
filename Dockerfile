@@ -1,9 +1,9 @@
 # Use the official R image from the Docker Hub
 FROM r-base:latest
 
-# Install system dependencies needed for R packages with specific versions
+# Install system dependencies needed for R packages without specifying versions
 RUN apt-get update && apt-get install -y \
-    libcurl4-openssl-dev=8.8.0-4 \
+    libcurl4-openssl-dev \
     libssl-dev \
     libsodium-dev \
     cmake \

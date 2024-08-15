@@ -1,5 +1,5 @@
 # Use the official R image from the Docker Hub
-FROM r-base:4.2.2
+FROM r-base:4.4.0
 
 # Install system dependencies needed for R packages without specifying versions
 RUN apt-get update && apt-get install -y \

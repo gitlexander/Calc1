@@ -394,7 +394,41 @@ descriptions_df <- data.frame(
 # Merge result1 with descriptions_df to add descriptions
 result1 <- merge(result1, descriptions_df, by.x = "subID", by.y = "subID")
 
+lists <- list(
+  MedQ = list("A1", "A2", "A3", "C1", "C2", "B4", "D4", "D5", "G1"),
+  MedGlider = list("A1", "A2", "A4", "A5", "B4", "C2", "D2", "D4", "D5", "G1"),
+  VitaCarry = list("A1", "A2", "A5", "A6", "C2", "D4", "D5", "G1"),
+  epill = list("A4", "A5", "B4", "C2", "D2", "D4", "D5", "G1"),
+  hour = list("B4", "C2", "D4", "D5", "G1"),
+  ennovea = list("A1", "A2", "A6", "C2", "D1", "D3", "D4", "D5", "D6", "G1", "H1"),
+  pillbox = list("B4", "C2", "D3", "D4", "D5", "G1"),
+  medcentre = list("A1", "A2", "A5", "A6", "B4", "C2", "D3", "D4", "G1"),
+  elliegrid = list("D2", "D4", "D5", "G1", "G2", "I1", "I2", "I3"),
+  medready = list("A1", "A2", "A5", "A6", "B1", "B2", "B3", "B4", "C1", "C2", "D2", "D4"),
+  gms = list("A1", "A2", "A6", "B1", "B2", "B4", "C1", "C2", "D4", "D5", "G2", "G3"),
+  spencer = list("A1", "A6", "C2", "G1", "I1", "I3", "M1", "P1"),
+  jones = list("A1", "A6", "G1", "G2", "R1", "R2", "T1", "T2")
+)
+
+# Function to calculate average probability for a given list of subtask IDs
+average_probability <- function(subtasks) {
+  # Filter the dataframe for the given subtasks
+  filtered_df <- result1[result1$subID %in% subtasks, ]
+  
+  # Calculate the mean probability
+  mean(filtered_df$probability, na.rm = TRUE)
+}
+
+# Apply the function to each list in the lists object
+average_probabilities <- lapply(lists, average_probability)
+
+# Display the average probabilities for each group
+#print(average_probabilities)
+
+
 # View the updated result1
-  print(result1)
+#print(result1)
+combined <- list(result1 = result1, average_probabilities = average_probabilities)
+print(combined)
   
 }

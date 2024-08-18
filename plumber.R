@@ -428,7 +428,8 @@ probdf <- as.data.frame(average_probabilities)
 
 # View the updated result1
 #print(result1)
-combined <- merge(result1,probdf)
-print(combined)
+  combined <- merge(result1,probdf)
+  sortedcombined <- combined[order(-combined$probability), ]
+  print(sortedcombined)
   
 }

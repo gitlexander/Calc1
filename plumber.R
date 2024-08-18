@@ -424,11 +424,11 @@ average_probabilities <- lapply(lists, average_probability)
 
 # Display the average probabilities for each group
 #print(average_probabilities)
-
+probdf <- as.data.frame(average_probabilities)
 
 # View the updated result1
 #print(result1)
-combined <- list(result1 = result1, average_probabilities = average_probabilities)
+combined <- merge(result1,probdf)
 print(combined)
   
 }

@@ -433,13 +433,3 @@ probdf <- as.data.frame(average_probabilities)
   print(sortedcombined)
   
 }
-
-#* Get the list of subtasks
-#* @get /productprops
-function(){
-  # Extract the specified columns by their index numbers
-  row_contents <- sortedcombined[1, 4:16, drop = FALSE]
-  
-  # Print the row contents with column names
-  print(row_contents)
-}

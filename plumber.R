@@ -1,5 +1,3 @@
-# 1. Data cleaning
-
 library(readr)
 library(readxl)
 library(ggplot2)
@@ -14,10 +12,14 @@ library(plumber)
 
 #* Get the list of subtasks
 #* @get /subtasks
-function(nage, ngender, nmednum, nmedhisnum, ncog, nphy, nvis, nmotiv, nenv, nhear) {
-  df <- read_excel("Data.xlsx")
+function(nage,ngender,nmednum,nmedhisnum,ncog,nphy,nvis,nmotiv,nbusy,nhear) {
   
-  nid <- 81
+  df <- read_excel("C:/Users/astav/Documents/96/Data_96 participants.xlsx")
+  dfcsv <- read.csv("C:/Users/astav/Documents/96/Data_96 participants.csv")
+  
+  df$`dlvt summary score` <- as.numeric(dfcsv$dlvt.summary.score)
+  
+  nid <- 97
   nage <- as.numeric(nage)
   ngender <- as.numeric(ngender)
   nmednum <- as.numeric(nmednum)
@@ -26,10 +28,8 @@ function(nage, ngender, nmednum, nmedhisnum, ncog, nphy, nvis, nmotiv, nenv, nhe
   nphy <- as.numeric(nphy)
   nvis <- as.numeric(nvis)
   nmotiv <- as.numeric(nmotiv)
-  nenv <- as.numeric(nenv)
+  nbusy <- as.numeric(nbusy)
   nhear <- as.numeric(nhear)
-  
-  #modify df to include new participant's information in the last column
   
   # change column names for products
   colnames(df)[4] <- "PD1"
@@ -49,8 +49,7 @@ function(nage, ngender, nmednum, nmedhisnum, ncog, nphy, nvis, nmotiv, nenv, nhe
   
   # add whisper test percentage column
   df$`whisper test left`[df$`whisper test left` == 2] <- 0
-  df$`whisper test right`[df$ `whisper test right` == 2] <- 0
-  df$`whisper score percentage` <- (df$`whisper test left` + df$`whisper test right`)/2 * 100
+  df$`whisper test right`[df$`whisper test right` == 2] <- 0
   df$gender <- factor(ifelse(df$gender == 1, 0, 1))
   # add a column for total number of medical conditions
   df$totalmedhist <- rowSums(df[, c(23:43)])
@@ -59,24 +58,29 @@ function(nage, ngender, nmednum, nmedhisnum, ncog, nphy, nvis, nmotiv, nenv, nhe
   
   # columns for subtasks
   subtask1columns <- sort(c(seq(from = 85, to = 240, by = 5), seq(from = 88, to = 243, by = 5)))
-  democolumns <- c(1, 17, 18, 22, 353) 
-  #limitcolumns <- c(53, 59, 62, 74, 79, 352)
-  limitcolumns <- c(52, 58, 61, 74, 79, 69)
+  democolumns <- c(1, 17, 18, 22, 350) 
+  
+  # limit columns:
+  # SMAT cognitive: 52; SMAT physical: 58; vision: SMAT 61 or DLVT 80; SEAMS (motivation): 72; MPED (environment): 75 or 77; hearing: 69
+  limitcolumns <- c(52, 58, 61, 72, 75, 77, 71, 69)
   
   df2 <- df[,c(democolumns, limitcolumns, subtask1columns)]
   
   # rename the columns
-  colnames(df2) <- c("ID", "Age", "Gender", "Mednum", "Medhisnum", "Cog", "Phy", "Vis", "Motiv", "Env", "Hear", "A1c", "A1f",
+  colnames(df2) <- c("ID", "Age", "Gender", "Mednum", "Medhist", "Cog", "Phy", "SMAT_vis", "SEAMS", "MPED_busy", "MPED_routine", "DLVT_vis", "Hear", "A1c", "A1f",
                      "A2c", "A2f", "A3c", "A3f", "A4c", "A4f", "A5c", "A5f", "A6c", "A6f", "B1c", "B1f", "B2c", "B2f", "B3c", "B3f", "B4c", "B4f",
                      "C1c", "C1f", "C2c", "C2f", "D1c", "D1f", "D2c", "D2f", "D3c", "D3f", "D4c", "D4f", "D5c", "D5f", "D6c", "D6f", "G1c", "G1f",
                      "G2c", "G2f", "G3c", "G3f", "H1c", "H1f", "I1c", "I1f", "I2c", "I2f", "I3c", "I3f", "M1c", "M1f", "P1c", "P1f", "R1c", "R1f", 
-                     "R2c", "R2f", "T1c", "T1f", "T2c", "T2f", "U1c", "U1f")
+                     "R2c", "R2f", "T1c", "T1f", "T2c", "T2f", "U1c", "U1f") 
   
   df3 <- df2 %>%
     group_by(ID) %>%
     summarise(
-      Age = first(Age), Gender = first(Gender), Mednum = first(Mednum), Medhisnum = first(Medhisnum),
-      Cog = first(Cog), Phy = first(Phy), Vis = first(Vis), Motiv = first(Motiv), Env = first(Env), Hear = first(Hear),
+      Age = first(Age), Gender = first(Gender), Mednum = first(Mednum), 
+      Medhist = first(Medhist), Cog = first(Cog), Phy = first(Phy), 
+      SMAT_vis = first(SMAT_vis), SEAMS = first(SEAMS), 
+      MPED_busy = first(MPED_busy), MPED_routine = first(MPED_routine),
+      DLVT_vis = first(DLVT_vis), Hear = first(Hear),
       A1 = sum(A1c),
       A1fail = sum(A1f),
       A2 = sum(A2c),
@@ -144,7 +148,7 @@ function(nage, ngender, nmednum, nmedhisnum, ncog, nphy, nvis, nmotiv, nenv, nhe
     )
   
   # New row with some data
-  new_row <- c(ID=nid,Age=nage,Gender=ngender,Mednum=nmednum,Medhisnum=nmedhisnum,Cog=ncog,Phy=nphy,Vis=nvis,Motiv=nmotiv,Env=nenv,Hear=nhear)
+  new_row <- c(ID=nid,Age=nage,Gender=ngender,Mednum=nmednum,Medhist=nmedhisnum,Cog=ncog,Phy=nphy,DLVT_vis=nvis,SEAMS=nmotiv,MPED_busy=nbusy,MPED_routine=0,Hear=nhear)
   
   # Create a new row with all columns
   new_row_full <- setNames(as.list(rep(0, ncol(df3))), names(df3))
@@ -158,29 +162,29 @@ function(nage, ngender, nmednum, nmedhisnum, ncog, nphy, nvis, nmotiv, nenv, nhe
   # Add the new row to the existing data frame
   df3 <- rbind(df3, new_row_df)
   
-  
-  #reformat binary variables as factors
-  df3$Motiv <- as.factor(df3$Motiv)
-  df3$Env <- as.factor(df3$Env)
+  df3$SMAT_vis <- as.numeric(df3$SMAT_vis)
   df3$Hear <- as.factor(df3$Hear)
-  df3$Vis <- as.numeric(df3$Vis)
   
   # standardizing continuous covariates
   
   df3$Age_std <- (df3$Age - mean(df3$Age))/sd(df3$Age)
   df3$Mednum_std <- (df3$Mednum - mean(df3$Mednum))/sd(df3$Mednum)
-  df3$Medhisnum_std <- (df3$Medhisnum - mean(df3$Medhisnum))/sd(df3$Medhisnum)
+  df3$Medhist_std <- (df3$Medhist - mean(df3$Medhist))/sd(df3$Medhist)
   df3$Cog_std <- (df3$Cog - mean(df3$Cog))/sd(df3$Cog)
   df3$Phy_std <- (df3$Phy - mean(df3$Phy))/sd(df3$Phy)
-  df3$Vis_std <- (df3$Vis - mean(df3$Vis))/sd(df3$Vis)
+  df3$SMAT_vis_std <- (df3$SMAT_vis - mean(df3$SMAT_vis))/sd(df3$SMAT_vis)
+  df3$SEAMS_std <- (df3$SEAMS - mean(df3$SEAMS))/sd(df3$SEAMS)
+  df3$MPED_busy_std <- (df3$MPED_busy - mean(df3$MPED_busy))/sd(df3$MPED_busy)
+  df3$MPED_routine_std <- (df3$MPED_routine - mean(df3$MPED_routine))/sd(df3$MPED_routine)
+  df3$DLVT_vis_std <- (df3$DLVT_vis - mean(df3$DLVT_vis))/sd(df3$DLVT_vis)
   
-  #write.csv(df3, "df3.csv")
-  
-  #2. Splitting the data into training and predicting
+  # Splitting the data in Training and Predicting
   
   # Get important columns from df3
   
-  PPMiden <- df3[c("ID", "Age_std", "Gender", "Mednum_std", "Medhisnum_std", "Cog_std", "Phy_std", "Vis_std", "Motiv", "Env", "Hear")]
+  PPMiden <- df3[c("ID", "Gender", "Mednum_std", "Medhist_std", "Cog_std", 
+                   "Phy_std", "SMAT_vis_std", "SEAMS_std", "MPED_busy_std", 
+                   "DLVT_vis_std", "Hear")]
   
   # randomly select 3 rows from PPMiden to demonstrate later how prediction works
   #set.seed(123)
@@ -201,13 +205,11 @@ function(nage, ngender, nmednum, nmedhisnum, ncog, nphy, nvis, nmotiv, nenv, nhe
   idenID <- function(predicting_i, training, Mp) {
     
     testingvecnoID <-as.numeric(predicting_i)[-1]
-    testingvecnoID[c(2, 8, 9, 10)] <- testingvecnoID[c(2, 8, 9, 10)]-1 # since as.numeric added 1 to the binary variables
+    testingvecnoID[c(1, 10)] <- testingvecnoID[c(1, 10)]-1 # since as.numeric added 1 to the binary variables
     
     # change training data into all numeric values
     trainingnoID <- training[-1]
     trainingnoID$Gender <- as.numeric(trainingnoID$Gender)-1
-    trainingnoID$Motiv <- as.numeric(trainingnoID$Motiv) - 1
-    trainingnoID$Env <- as.numeric(trainingnoID$Env) -1
     trainingnoID$Hear <- as.numeric(trainingnoID$Hear) -1
     
     # calculate cosine similarity metric of every value in the training data with one testing data and append to the training data
@@ -226,12 +228,6 @@ function(nage, ngender, nmednum, nmedhisnum, ncog, nphy, nvis, nmotiv, nenv, nhe
   
   predicting$ID
   
-  #3. Identifying similar participants
-  
-  print("TrainingID for new participant:")
-  newperson1_simID
-  
-  #4. Fitting the model
   # first, we do some more data cleaning to make it into a format that we want:
   
   df4 <- df3 %>% pivot_longer(cols = c("A1", "A2", "A3", "A4", "A5", "A6", 
@@ -242,7 +238,8 @@ function(nage, ngender, nmednum, nmedhisnum, ncog, nphy, nvis, nmotiv, nenv, nhe
                                        "T2", "U1"),
                               names_to = "Subtasks",
                               values_to = "Count")
-  
+  #write.csv(df4, "df4.csv")
+  #write.csv(df3, "df3o.csv")
   
   # create a new vector failcount of length 2560. Three things are needed to find the correct element to append to this vector: the subtask, the patient ID, and its failure moment for the corresponding subtask.
   
@@ -269,62 +266,48 @@ function(nage, ngender, nmednum, nmedhisnum, ncog, nphy, nvis, nmotiv, nenv, nhe
   
   dfnoNA <- df4[df4$Count != 0,]
   
-  dfnoNA$Age <- as.numeric(dfnoNA$Age)
-  dfnoNA$Gender <- as.factor(dfnoNA$Gender) #0 for male, 1 for female, 2 for other
-  dfnoNA$Mednum <- as.numeric(dfnoNA$Mednum)
-  dfnoNA$Medhisnum <- as.numeric(dfnoNA$Medhisnum)
-  dfnoNA$Cog <- as.numeric(dfnoNA$Cog)
-  dfnoNA$Phy <- as.numeric(dfnoNA$Phy)
-  dfnoNA$Vis <- as.numeric(dfnoNA$Vis)
-  dfnoNA$Motiv <- as.factor(dfnoNA$Motiv)
-  dfnoNA$Env <- as.factor(dfnoNA$Env)
-  #dfnoNA$Hear <- as.numeric(dfnoNA$Hear)
-  dfnoNA$Hear <- as.factor(dfnoNA$Hear)
   dfnoNA$Subtasks <- as.factor(dfnoNA$Subtasks)
   
   # It looks like some subtasks have no split in the data (i.e. everyone was successful). Let's check:
-  # dfnoNA$Proportion[dfnoNA$Subtasks == "A3"]
-  # dfnoNA$Proportion[dfnoNA$Subtasks == "D1"]
-  # dfnoNA$Proportion[dfnoNA$Subtasks == "I2"]
-  # dfnoNA$Proportion[dfnoNA$Subtasks == "U1"]
+  dfnoNA$Proportion[dfnoNA$Subtasks == "D1"]
   
   # Should we remove these subtasks from the model? Let's create a new dataframe 
-  dfnoNA2 <- dfnoNA[!dfnoNA$Subtasks %in% c("A3", "D1", "I2", "U1"), ]
+  dfnoNA2 <- dfnoNA[!dfnoNA$Subtasks %in% c("D1"), ]
   dfnoNA2$Subtasks <- droplevels(dfnoNA2$Subtasks)
-  #unique(dfnoNA$Subtasks)
-  #unique(dfnoNA2$Subtasks)
-  #write.csv(dfnoNA2, "dfnoNA2.csv")
+  
+  #write.csv(dfnoNA2, df3noNA2.csv")
+  
+  # Most similar participants to P31
+  
+  #The top 80% of the participants in the training data that is the most similar to Participant 31 are:
+  print("TrainingID for P31:")
+  sort(newperson1_simID)
+  
+  # Fitting predictive models
+  #To predict the success rate of each subtask for a new participant, we train a generalized linear model on a personalized dataset (i.e. top 80% of the most similar participants to this new participant). We consider two models, one including the SMAT vision score, and the other including the DLVT vision score:
   
   # for newperson1
   training1 <- subset(dfnoNA2, ID %in% newperson1_simID)
   
-  model1 <- glm(Proportion ~ Gender + Mednum_std + Medhisnum_std + Cog_std + Phy_std + Vis_std + Motiv + Env + Hear + Subtasks,
-                data = training1,
-                weights = Count,
-                family = binomial(link = "logit"))
-  # showing the output of the model
-  summary(model1)
+  training1$Gender <- as.factor(training1$Gender)
+  training1$Hear <- as.factor(training1$Hear)
   
+  # for P31:
   
-  #6. Making predictions
-  makingpred <- function(newparticipant, subtask_list, fittedmodel) {
+  model31_2 <- glm(Proportion ~ Gender + Mednum + Medhist + Cog + Phy  
+                   + DLVT_vis + SEAMS + MPED_busy + Hear + Subtasks,
+                   data = training1,
+                   weights = Count,
+                   family = binomial(link = "logit"))
+  
+  # Making predictions
+  
+  makingpred <- function(newdata, subtask_list, fittedmodel) {
     
-    repeated_rows <- rep(newparticipant, each = length(subtask_list))
-    newdata <- as.data.frame(matrix(unlist(repeated_rows), nrow = length(subtask_list)))
-    colnames(newdata) <- colnames(newparticipant)
-    
+    newdata <- as.data.frame(newdata)
+    newdata <- newdata[rep(seq_len(nrow(newdata)), length.out = 30), ]
     newdata$Subtasks <- subtask_list
     newdata$Subtasks <- as.factor(newdata$Subtasks)
-    newdata$ID <- as.numeric(newdata$ID)
-    newdata$Gender <- as.factor(newdata$Gender-1)
-    newdata$Mednum_std <- as.numeric(newdata$Mednum_std)
-    newdata$Medhisnum_std <- as.numeric(newdata$Medhisnum_std)
-    newdata$Cog_std <- as.numeric(newdata$Cog_std)
-    newdata$Phy_std <- as.numeric(newdata$Phy_std)
-    newdata$Vis_std <- as.numeric(newdata$Vis_std)
-    newdata$Motiv <- as.factor(newdata$Motiv-1)
-    newdata$Env <- as.factor(newdata$Env-1)
-    newdata$Hear <- as.factor(newdata$Hear-1)
     
     newdata$logodds <- as.numeric(predict(fittedmodel, newdata))
     newdata$prop <- exp(newdata$logodds)/(1+exp(newdata$logodds))
@@ -334,102 +317,135 @@ function(nage, ngender, nmednum, nmedhisnum, ncog, nphy, nvis, nmotiv, nenv, nhe
     
   }
   
-  #newparticipant_ <- df3[df3$ID == predicting$ID[1],]
-  #newparticipant <- newparticipant_[c("ID", "Age", "Gender", "Mednum", "Medhisnum", "Cog", "Phy", "Vis", "Motiv", "Env", "Hear")]
-  newparticipant <- predicting[1,]
+  subtask_list <- c("A1", "A2", "A3", "A4", "A5", "A6", "B1", "B2", "B3", "B4", 
+                    "C1", "C2", "D2", "D3", "D4", "D5", "D6", "G1", "G2", "G3", 
+                    "H1", "I1", "I2", "I3", "M1", "P1", "R1", "R2", "T1", "U1")
+  
+  # participant 1
+  #newparticipant1 <- dfnoNA2[dfnoNA2$ID == predicting$ID[1],]
+  #newparticipant1_2 <- df3[c("ID", "Gender", "Mednum", "Medhist", "Cog", "Phy", "DLVT_vis", "SEAMS", "MPED_busy", "Hear")]
+  #newparticipant1 <- predicting[1,]
+  newparticipant1_2 <- df3[df3$ID == 97, c("ID", "Gender", "Mednum", "Medhist", "Cog", "Phy", "DLVT_vis", "SEAMS", "MPED_busy", "Hear")]
+  
+  pred1_2 <- makingpred(newparticipant1_2, subtask_list, model31_2)
   
   
-  subtask_list <- c("A1", "A2", "A4", "A5", "A6", "B1", "B2", "B3", "B4", 
-                    "C1", "C2", "D2", "D3", "D4", "D5", "D6", "G1", "G2", 
-                    "G3", "H1", "I1", "I3", "M1", "P1", "R1", "R2", "T1", "T2")
+  #We predict the success rate of each subtask for P31, P79, and P51 using the fitted models above. 
   
-  pred1 <- makingpred(newparticipant, subtask_list, model1)
+  ## P31 
   
-  pred1[1, c(3:11)]
-  pred1[c(1, 12, 13, 14)]
+  #P31 has the following characteristics:
+  
+  pred1_2[1,c(2:10)]
+  
+  #Using `model31_2`, which has DLVT vision score instead of SMAT vision score, we get the following output:
+  
+  pred1_2[c(1, 11:13)]
+  
+  # Conclusion
+  
+  #Thus, the subtasks predicted to have the highest success rate to the lowest success rate for P31 are
+  
+  as.vector(pred1_2$Subtasks)
+  
+  #when we use the DLVT vision score. There is a slight difference in the ordering of some subtasks from fitting two different models.
+  
+  #In conclusion, we use GLM to predict the proportion of success for each subtask for the three different participants: P31, P79, and P51. We showed that not only do these participants have different success rates for the subtasks, but also the order of the subtasks from the most successful to the least successful also differs. This is because to predict the success rate of the subtasks, we have used a model fitted on a personalized data that only contain 80% of the original data that are the most similar to each of the three participants - this way, we can consider the unique characteristics of the new participants to predict their success rate of each subtask, and recommend products that are better suited to their situation.
+  
+  
+  # Appendix
+  
+  #Summary of models fit for P31 using SMAT:
+  #summary(model31_1)
+  
+  #Summary of models fit for P31 using DLVT:
+  #summary(model31_2)
   
   #7. Conclusion
   
-result1 <- data.frame(subID=pred1$Subtasks, probability=round((pred1$prop)*100))
-# Assuming you already have result1 and descriptions_df data frames
-
-# Create the descriptions data frame
-descriptions_df <- data.frame(
-  subID = c("A1", "A2", "A4", "A5", "A6", "B1", "B2", "B3", "B4", 
-            "C1", "C2", "D2", "D3", "D4", "D5", "D6", "G1", "G2", 
-            "G3", "H1", "I1", "I3", "M1", "P1", "R1", "R2", "T1", "T2"),
-  description = c(description = c(
-    "Locate the battery/cartridge compartment/medication cavity",
-    "Place/insert batteries correctly",
-    "Slide in/out battery compartment door",
-    "Slide a tab/button",
-    "Check/ensure/verify the device is on or the lock is placed in position/Follow instructions/Ensure indicator light flashes",
-    "Flip device",
-    "Insert key and rotate",
-    "Press and rotate a lid",
-    "Open a lid by lifting",
-    "Press and hold a button on a device",
-    "Press a button on a device",
-    "Open pill box or compartment or tray or door by sliding",
-    "Pick up the correct pillbox/pill organizer/open correct compartment",
-    "Insert/fill/place medication in compartment/pillbox/pill organizer",
-    "Close lid",
-    "Put stickers on pillbox dividers",
-    "Remove the medication",
-    "Grab/hold the device",
-    "Place hand over open slot",
-    "Rotate the carousel three days from today’s date",
-    "Locate and touch on an icon/button on an app or screen",
-    "Scroll through the options on a screen",
-    "Align and insert cartridge into the designated slot",
-    "Tear packaging",
-    "Rotate retaining clips at each end of the device in an open/close position",
-    "Align connectors to one another and gently push card into the device",
-    "Pierce cavity barrier",
-    "Pinch number printed on card and pull out"
-  )
-  ) 
-)
-
-# Merge result1 with descriptions_df to add descriptions
-result1 <- merge(result1, descriptions_df, by.x = "subID", by.y = "subID")
-
-lists <- list(
-  MedQ = list("A1", "A2", "A3", "C1", "C2", "B4", "D4", "D5", "G1"),
-  MedGlider = list("A1", "A2", "A4", "A5", "B4", "C2", "D2", "D4", "D5", "G1"),
-  VitaCarry = list("A1", "A2", "A5", "A6", "C2", "D4", "D5", "G1"),
-  epill = list("A4", "A5", "B4", "C2", "D2", "D4", "D5", "G1"),
-  hour = list("B4", "C2", "D4", "D5", "G1"),
-  ennovea = list("A1", "A2", "A6", "C2", "D1", "D3", "D4", "D5", "D6", "G1", "H1"),
-  pillbox = list("B4", "C2", "D3", "D4", "D5", "G1"),
-  medcentre = list("A1", "A2", "A5", "A6", "B4", "C2", "D3", "D4", "G1"),
-  elliegrid = list("D2", "D4", "D5", "G1", "G2", "I1", "I2", "I3"),
-  medready = list("A1", "A2", "A5", "A6", "B1", "B2", "B3", "B4", "C1", "C2", "D2", "D4"),
-  gms = list("A1", "A2", "A6", "B1", "B2", "B4", "C1", "C2", "D4", "D5", "G2", "G3"),
-  spencer = list("A1", "A6", "C2", "G1", "I1", "I3", "M1", "P1"),
-  jones = list("A1", "A6", "G1", "G2", "R1", "R2", "T1", "T2")
-)
-
-# Function to calculate average probability for a given list of subtask IDs
-average_probability <- function(subtasks) {
-  # Filter the dataframe for the given subtasks
-  filtered_df <- result1[result1$subID %in% subtasks, ]
+  result1 <- data.frame(subID=pred1_2$Subtasks, probability=round((pred1_2$prop)*100))
+  # Assuming you already have result1 and descriptions_df data frames
   
-  # Calculate the mean probability
-  mean(filtered_df$probability, na.rm = TRUE)
-}
-
-# Apply the function to each list in the lists object
-average_probabilities <- lapply(lists, average_probability)
-
-# Display the average probabilities for each group
-#print(average_probabilities)
-probdf <- as.data.frame(average_probabilities)
-
-# View the updated result1
-#print(result1)
+  # Create the descriptions data frame
+  descriptions_df <- data.frame(
+    subID = c("A1", "A2", "A3", "A4", "A5", "A6", "B1", "B2", "B3", "B4", 
+              "C1", "C2", "D2", "D3", "D4", "D5", "D6", "G1", "G2", 
+              "G3", "H1", "I1", "I2", "I3", "M1", "P1", "R1", "R2", "T1", "U1"),
+    description = c(description = c(
+      "Locate the battery/cartridge compartment/medication cavity",
+      "Place/insert batteries correctly",
+      "Lift open or close a battery compartment door",
+      "Slide in/out battery compartment door",
+      "Slide a tab/button",
+      "Check/ensure/verify the device is on or the lock is placed in position/Follow instructions/Ensure indicator light flashes",
+      "Flip device",
+      "Insert key and rotate",
+      "Press and rotate a lid",
+      "Open a lid by lifting",
+      "Press and hold a button on a device",
+      "Press a button on a device",
+      "Open pill box or compartment or tray or door by sliding",
+      "Pick up the correct pillbox/pill organizer/open correct compartment",
+      "Insert/fill/place medication in compartment/pillbox/pill organizer",
+      "Close lid",
+      "Put stickers on pillbox dividers",
+      "Remove the medication",
+      "Grab/hold the device",
+      "Place hand over open slot",
+      "Rotate the carousel three days from today’s date",
+      "Locate and touch on an icon/button on an app or screen",
+      "Enter/type data in a digital app/screen",
+      "Scroll through the options on a digital screen",
+      "Align and insert cartridge into the designated slot",
+      "Tear packaging",
+      "Rotate retaining clips at each end of the device in an open/close position",
+      "Align connectors to one another and gently push card into the device",
+      "Pierce cavity barrier",
+      "Pull blister pack away from a connected device"
+    )
+    ) 
+  )
+  
+  # Merge result1 with descriptions_df to add descriptions
+  result1 <- merge(result1, descriptions_df, by.x = "subID", by.y = "subID")
+  
+  lists <- list(
+    MedQ = list("A1", "A2", "A3", "C1", "C2", "B4", "D4", "D5", "G1"),
+    MedGlider = list("A1", "A2", "A4", "A5", "B4", "C2", "D2", "D4", "D5", "G1"),
+    VitaCarry = list("A1", "A2", "A5", "A6", "C2", "D4", "D5", "G1"),
+    epill = list("A4", "A5", "B4", "C2", "D2", "D4", "D5", "G1"),
+    hour = list("B4", "C2", "D4", "D5", "G1"),
+    ennovea = list("A1", "A2", "A6", "C2", "D1", "D3", "D4", "D5", "D6", "G1", "H1"),
+    pillbox = list("B4", "C2", "D3", "D4", "D5", "G1"),
+    medcentre = list("A1", "A2", "A5", "A6", "B4", "C2", "D3", "D4", "G1"),
+    elliegrid = list("D2", "D4", "D5", "G1", "G2", "I1", "I2", "I3"),
+    medready = list("A1", "A2", "A5", "A6", "B1", "B2", "B3", "B4", "C1", "C2", "D2", "D4"),
+    gms = list("A1", "A2", "A6", "B1", "B2", "B4", "C1", "C2", "D4", "D5", "G2", "G3"),
+    spencer = list("A1", "A6", "C2", "G1", "I1", "I3", "M1", "P1"),
+    jones = list("A1", "A6", "G1", "G2", "R1", "R2", "T1", "U1")
+  )
+  
+  # Function to calculate average probability for a given list of subtask IDs
+  average_probability <- function(subtasks) {
+    # Filter the dataframe for the given subtasks
+    filtered_df <- result1[result1$subID %in% subtasks, ]
+    
+    # Calculate the mean probability
+    mean(filtered_df$probability, na.rm = TRUE)
+  }
+  
+  # Apply the function to each list in the lists object
+  average_probabilities <- lapply(lists, average_probability)
+  
+  # Display the average probabilities for each group
+  #print(average_probabilities)
+  probdf <- as.data.frame(average_probabilities)
+  
+  # View the updated result1
+  #print(result1)
   combined <- merge(result1,probdf)
   sortedcombined <- combined[order(-combined$probability), ]
   print(sortedcombined)
+  #write.csv(sortedcombined,"sortedcombineddf.csv", row.names = TRUE)
   
 }

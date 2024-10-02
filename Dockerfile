@@ -14,8 +14,9 @@ RUN apt-get update && apt-get install -y \
 # Install R packages
 RUN R -e "install.packages(c('plumber', 'nloptr', 'webutils', 'readr', 'readxl', 'ggplot2', 'data.table', 'tidyr', 'car', 'dplyr', 'caret', 'MASS', 'lsa'), repos='http://cran.us.r-project.org')"
 
-# Copy the Excel sheet with data into the Docker image
-COPY Data.xlsx /Data.xlsx
+# Copy the Excel sheets with data into the Docker image
+COPY Data96.xlsx /Data96.xlsx
+COPY Data96.csv /Data96.csv
 
 # Copy the API script into the Docker image
 COPY plumber.R /plumber.R

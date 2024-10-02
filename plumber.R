@@ -1,4 +1,4 @@
-library(readr)
+ library(readr)
 library(readxl)
 library(ggplot2)
 library(data.table)
@@ -14,8 +14,8 @@ library(plumber)
 #* @get /subtasks
 function(nage,ngender,nmednum,nmedhisnum,ncog,nphy,nvis,nmotiv,nbusy,nhear) {
   
-  df <- read_excel("Data_96 participants.xlsx")
-  dfcsv <- read.csv("Data_96 participants.csv")
+  df <- read_excel("Data96.xlsx")
+  dfcsv <- read.csv("Data96.csv")
   
   df$`dlvt summary score` <- as.numeric(dfcsv$dlvt.summary.score)
   
